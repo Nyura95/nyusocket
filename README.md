@@ -32,3 +32,50 @@ func main() {
 	}
 }
 ```
+
+Exemple client
+
+```tsx
+import useWebSocket from "react-use-websocket";
+
+interface IMessage {
+  Action: string;
+  Message: string;
+  Key: string;
+  Created: string;
+}
+
+const page: FunctionComponent = () => {
+  const [messages, setMessages] = useState<string[]>([]);
+  const { readyState, lastMessage } = useWebSocket(
+    "ws://localhost:3001/anyToken"
+  );
+
+  useEffect(() => {
+    if (lastMessage) {
+      try {
+        for (const message of lastMessage.data.split("\n")) {
+          const json: IMessage = JSON.parse(message);
+          if (
+            messages.length < 1 ||
+            json.Created !== messages[messages.length - 1].Created
+          ) {
+            setMessages([...messages, json]);
+          }
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  }, [lastMessage, messages, setMessages]);
+
+  return (
+    <Fragment>
+      <div>state: {readyState}</div>
+      {messages.map((x, index) => (
+        <div key={index}>{x.Message}</div>
+      ))}
+    </Fragment>
+  );
+};
+```
