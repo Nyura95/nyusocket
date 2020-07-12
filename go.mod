@@ -1,4 +1,4 @@
-module nyusocket
+module github.com/Nyura95/nyusocket
 
 go 1.13
 
