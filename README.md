@@ -27,7 +27,11 @@ func main() {
 			for client := range clients {
 				client.Send <- nyusocket.NewMessage("unregister", "New unregister", "new_unregister").Send()
 			}
-			log.Printf("Client unregister alive now : %d", nyusocket.Infos.NbAlive())
+      log.Printf("Client unregister alive now : %d", nyusocket.Infos.NbAlive())
+    case clientMessage := <-Events.ClientMessage:
+      for client := range client.Hub.GetOtherClient() {
+				client.Send <- nyusocket.NewMessage("Message", clientMessage.Message, "new_message").Send()
+			}
 		}
 	}
 }

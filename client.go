@@ -42,12 +42,16 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, _, err := c.conn.ReadMessage()
+		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
+		}
+		c.Hub.message <- ClientMessage{
+			Message: string(message),
+			client:  c,
 		}
 	}
 }
