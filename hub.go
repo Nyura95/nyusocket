@@ -56,14 +56,6 @@ func (h *Hub) run(events *Events) {
 					events.Unregister <- h.Clients
 				}
 			}
-		case message := <-h.Broadcast:
-			for client := range h.Clients {
-				select {
-				case client.Send <- message:
-				default:
-					h.unregister <- client
-				}
-			}
 		}
 	}
 }
