@@ -20,7 +20,7 @@ func main() {
 	for {
 		select {
 		case auth := <-Events.Authorization:
-			// if client send a anyTokenAuthorization
+			// only one hash
 			auth.Authorize <- !socket.Infos.Alive(auth.Hash)
 		case client := <-Events.Register:
 			client.Send <- socket.NewMessage("register", "Hello", "new_register").Send()
@@ -28,11 +28,12 @@ func main() {
 				other.Send <- socket.NewMessage("register", "New client", "new_register").Send()
 			}
 			log.Printf("New client register alive now : %d", socket.Infos.NbAlive())
-		case clients := <-Events.Unregister:
-			for client := range clients {
+		case unregister := <-Events.Unregister:
+			for _, client := range unregister.Client.Hub.GetOtherClient(unregister.Client) {
 				client.Send <- socket.NewMessage("unregister", "New unregister", "new_unregister").Send()
 			}
-			log.Printf("Client unregister alive now : %d", socket.Infos.NbAlive())
+      log.Printf("Client unregister alive now : %d", socket.Infos.NbAlive())
+			unregister.Continue <- true // Mandatory !
 		case clientMessage := <-Events.ClientMessage:
 			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
 				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
