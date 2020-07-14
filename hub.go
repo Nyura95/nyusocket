@@ -50,12 +50,18 @@ func (h *Hub) run(events *Events) {
 			Infos.Add(client.hash)
 		case c := <-h.unregister:
 			if _, ok := h.clients[c]; ok {
+				if events.Unregister != nil {
+					trigger := make(chan interface{})
+					events.Unregister <- Unregister{
+						Client:   c,
+						Continue: trigger,
+					}
+					<-trigger
+					close(trigger)
+				}
 				delete(h.clients, c)
 				close(c.Send)
 				Infos.Del(c.hash)
-				if events.Unregister != nil {
-					events.Unregister <- h.clients
-				}
 			}
 		case clientMessage := <-h.message:
 			events.ClientMessage <- clientMessage

@@ -4,7 +4,7 @@ package nyusocket
 type Events struct {
 	Authorization chan Authorization
 	Register      chan *Client
-	Unregister    chan map[*Client]bool
+	Unregister    chan Unregister
 	ClientMessage chan ClientMessage
 }
 
@@ -20,12 +20,18 @@ type ClientMessage struct {
 	Client  *Client
 }
 
+// Unregister ...
+type Unregister struct {
+	Client   *Client
+	Continue chan interface{}
+}
+
 // NewEvents ...
 func NewEvents() *Events {
 	return &Events{
 		Authorization: make(chan Authorization),
 		Register:      make(chan *Client),
-		Unregister:    make(chan map[*Client]bool),
+		Unregister:    make(chan Unregister),
 		ClientMessage: make(chan ClientMessage),
 	}
 }
