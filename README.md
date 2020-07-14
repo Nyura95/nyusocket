@@ -1,5 +1,9 @@
 # NyuSocket
 
+```shell
+go get github.com/Nyura95/nyusocket
+```
+
 Basic usage
 
 ```go
@@ -10,27 +14,28 @@ import "os"
 import "github.com/Nyura95/nyusocket"
 
 func main() {
-  Events := nyusocket.NewEvents()
-	go nyusocket.Start(Events)
+  Events := socket.NewEvents()
+	go socket.Start(Events, socket.Options{Port: port})
 
 	for {
 		select {
 		case auth := <-Events.Authorization:
-			auth.Authorize <- true
+			// if client send a anyTokenAuthorization
+			auth.Authorize <- !socket.Infos.Alive(auth.Hash)
 		case client := <-Events.Register:
-			client.Send <- nyusocket.NewMessage("register", "Hello", "new_register").Send()
-			for client := range client.Hub.Clients {
-				client.Send <- nyusocket.NewMessage("register", "New client", "new_register").Send()
+			client.Send <- socket.NewMessage("register", "Hello", "new_register").Send()
+			for _, other := range client.Hub.GetOtherClient(client) {
+				other.Send <- socket.NewMessage("register", "New client", "new_register").Send()
 			}
-			log.Printf("New client register alive now : %d", nyusocket.Infos.NbAlive())
+			log.Printf("New client register alive now : %d", socket.Infos.NbAlive())
 		case clients := <-Events.Unregister:
 			for client := range clients {
-				client.Send <- nyusocket.NewMessage("unregister", "New unregister", "new_unregister").Send()
+				client.Send <- socket.NewMessage("unregister", "New unregister", "new_unregister").Send()
 			}
-      log.Printf("Client unregister alive now : %d", nyusocket.Infos.NbAlive())
-    case clientMessage := <-Events.ClientMessage:
-      for client := range client.Hub.GetOtherClient() {
-				client.Send <- nyusocket.NewMessage("Message", clientMessage.Message, "new_message").Send()
+			log.Printf("Client unregister alive now : %d", socket.Infos.NbAlive())
+		case clientMessage := <-Events.ClientMessage:
+			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
 			}
 		}
 	}
@@ -40,6 +45,12 @@ func main() {
 Exemple client
 
 ```tsx
+import React, {
+  FunctionComponent,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import useWebSocket from "react-use-websocket";
 
 interface IMessage {
@@ -51,9 +62,17 @@ interface IMessage {
 
 const page: FunctionComponent = () => {
   const [messages, setMessages] = useState<string[]>([]);
-  const { readyState, lastMessage } = useWebSocket(
-    "ws://localhost:3001/anyToken"
+  const { readyState, lastMessage, sendMessage } = useWebSocket(
+    "ws://localhost:3001"
   );
+
+  // const { readyState, lastMessage, sendMessage } = useWebSocket(
+  //   "ws://localhost:3001/anyTokenAuthorization"
+  // );
+
+  const triggerMessage = useCallback(() => {
+    sendMessage("Hi !!");
+  }, []);
 
   useEffect(() => {
     if (lastMessage) {
@@ -79,6 +98,7 @@ const page: FunctionComponent = () => {
       {messages.map((x, index) => (
         <div key={index}>{x.Message}</div>
       ))}
+      <button onClick={triggerMessage}>Send Hi!</button>
     </Fragment>
   );
 };
