@@ -27,10 +27,12 @@ var upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	Hub  *Hub
+	Hub   *Hub
+	Send  chan []byte
+	Store interface{}
+
 	conn *websocket.Conn
-	Send chan []byte
-	Hash string
+	hash string
 }
 
 func (c *Client) readPump() {
@@ -51,7 +53,7 @@ func (c *Client) readPump() {
 		}
 		c.Hub.message <- ClientMessage{
 			Message: string(message),
-			client:  c,
+			Client:  c,
 		}
 	}
 }
@@ -108,7 +110,7 @@ func serveWs(hub *Hub, hash string, w http.ResponseWriter, r *http.Request) {
 	}
 
 	send := make(chan []byte, 256)
-	client := &Client{Hub: hub, conn: conn, Send: send, Hash: hash}
+	client := &Client{Hub: hub, conn: conn, Send: send, hash: hash}
 	client.Hub.register <- client
 
 	go client.readPump()

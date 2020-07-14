@@ -17,7 +17,7 @@ type Authorization struct {
 // ClientMessage ...
 type ClientMessage struct {
 	Message string
-	client  *Client
+	Client  *Client
 }
 
 // NewEvents ...
