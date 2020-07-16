@@ -1,4 +1,4 @@
-package socket
+package nyusocket
 
 import "github.com/segmentio/ksuid"
 
