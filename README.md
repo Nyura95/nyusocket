@@ -4,6 +4,13 @@
 go get github.com/Nyura95/nyusocket
 ```
 
+## Next step of development
+
+- Change the creation of events to make it more 'user frendly'
+- Add a auto removing client when your need all others Clients
+- return only user store when the event unregister trigger for remove the mandatory chan
+- Adding log server
+
 ## Basic usage
 
 ### Sending Message
