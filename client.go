@@ -27,12 +27,22 @@ var upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	Hub   *Hub
+	hub   *Hub
 	Send  chan []byte
 	Store interface{}
 
 	conn *websocket.Conn
 	hash string
+}
+
+// GetOthersClients ...
+func (c *Client) GetOthersClients() []*Client {
+	return c.hub.getOtherClient(c)
+}
+
+// GetAllClients ...
+func (c *Client) GetAllClients() []*Client {
+	return c.hub.GetClients()
 }
 
 func (c *Client) getHash() string {
@@ -41,7 +51,7 @@ func (c *Client) getHash() string {
 
 func (c *Client) readPump() {
 	defer func() {
-		c.Hub.unregister <- c
+		c.hub.unregister <- c
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
@@ -56,7 +66,7 @@ func (c *Client) readPump() {
 			break
 		}
 
-		c.Hub.message <- ClientMessage{
+		c.hub.message <- ClientMessage{
 			Message: string(message),
 			Client:  c,
 		}
@@ -120,8 +130,8 @@ func serveWs(hub *Hub, newClient *NewClient, w http.ResponseWriter, r *http.Requ
 	}
 
 	send := make(chan []byte, 256)
-	client := &Client{Hub: hub, conn: conn, Send: send, hash: newClient.getHash(), Store: newClient.Store}
-	client.Hub.register <- client
+	client := &Client{hub: hub, conn: conn, Send: send, hash: newClient.getHash(), Store: newClient.Store}
+	client.hub.register <- client
 
 	go client.readPump()
 	go client.writePump()

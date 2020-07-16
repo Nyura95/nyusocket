@@ -7,8 +7,6 @@ go get github.com/Nyura95/nyusocket
 ## Next step of development
 
 - Change the creation of events to make it more 'user frendly'
-- Add a auto removing client when your need all others Clients
-- return only user store when the event unregister trigger for remove the mandatory chan
 - Adding log server
 
 ## Basic usage
@@ -33,7 +31,7 @@ func main() {
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
-			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+			for _, other := range clientMessage.Client.GetOthersClients() {
 				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
 			}
 		}
@@ -72,7 +70,7 @@ func main() {
 			authorization.Authorize <- !socket.Infos.Alive(authorization.Client)
 		case clientMessage := <-events.ClientMessage:
 			storeClient := clientMessage.Client.Store.(storeClient)
-			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+			for _, other := range clientMessage.Client.GetOthersClients() {
 				other.Send <- socket.NewMessage("message", fmt.Sprintf("%s: %s", storeClient.token, clientMessage.Message), "message").Send()
 			}
 		}
@@ -99,12 +97,12 @@ func main() {
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
-			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+			for _, other := range clientMessage.Client.GetOthersClients() {
 				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
 			}
 		case client := <-events.Register:
 			client.Send <- socket.NewMessage("register", "Hello there!", "new_register").Send()
-			for _, other := range client.Hub.GetOtherClient(client) {
+			for _, other := range client.GetOthersClients() {
 				other.Send <- socket.NewMessage("register", "New client", "new_register").Send()
 			}
 		}
@@ -131,14 +129,14 @@ func main() {
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
-			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+			for _, other := range clientMessage.Client.GetOthersClients() {
 				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
 			}
-		case unregister := <-events.Unregister:
-			for _, other := range unregister.Client.Hub.GetOtherClient(unregister.Client) {
+    case unregister := <-events.Unregister:
+      // unregister.Store
+			for _, other := range unregister.Hub.GetClients() {
 				other.Send <- socket.NewMessage("unregister", "Client unregister", "new_unregister").Send()
 			}
-			unregister.Continue <- true
 		}
 	}
 }

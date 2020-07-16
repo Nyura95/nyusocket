@@ -19,8 +19,8 @@ func newHub() *Hub {
 	}
 }
 
-// GetClient return all clients connected
-func (h *Hub) GetClient() []*Client {
+// GetClients return all clients connected
+func (h *Hub) GetClients() []*Client {
 	clients := make([]*Client, 0, len(h.clients))
 	for client := range h.clients {
 		clients = append(clients, client)
@@ -28,8 +28,7 @@ func (h *Hub) GetClient() []*Client {
 	return clients
 }
 
-// GetOtherClient return all clients connected without hash
-func (h *Hub) GetOtherClient(c *Client) []*Client {
+func (h *Hub) getOtherClient(c *Client) []*Client {
 	clients := make([]*Client, 0, len(h.clients)-1)
 	for client := range h.clients {
 		if c.hash != client.hash {
@@ -50,18 +49,15 @@ func (h *Hub) run(events *Events) {
 			Infos.add(client.hash)
 		case c := <-h.unregister:
 			if _, ok := h.clients[c]; ok {
-				if events.Unregister != nil {
-					trigger := make(chan interface{})
-					events.Unregister <- Unregister{
-						Client:   c,
-						Continue: trigger,
-					}
-					<-trigger
-					close(trigger)
-				}
 				delete(h.clients, c)
 				close(c.Send)
 				Infos.del(c.hash)
+				if events.Unregister != nil {
+					events.Unregister <- Unregister{
+						Store: c.Store,
+						Hub:   h,
+					}
+				}
 			}
 		case clientMessage := <-h.message:
 			events.ClientMessage <- clientMessage

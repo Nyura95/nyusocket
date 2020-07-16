@@ -19,6 +19,6 @@ type ClientMessage struct {
 
 // Unregister ...
 type Unregister struct {
-	Client   *Client
-	Continue chan interface{}
+	Store interface{}
+	Hub   *Hub
 }
