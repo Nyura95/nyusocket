@@ -35,6 +35,10 @@ type Client struct {
 	hash string
 }
 
+func (c *Client) getHash() string {
+	return c.hash
+}
+
 func (c *Client) readPump() {
 	defer func() {
 		c.Hub.unregister <- c
@@ -51,6 +55,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
+
 		c.Hub.message <- ClientMessage{
 			Message: string(message),
 			Client:  c,
@@ -98,8 +103,13 @@ func (c *Client) writePump() {
 	}
 }
 
-func serveWs(hub *Hub, hash string, w http.ResponseWriter, r *http.Request) {
+func serveWs(hub *Hub, newClient *NewClient, w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool {
+		// cookie, err := r.Cookie("X-Auth-Token")
+		// if err != nil {
+		// 	log.Panicln(err)
+		// }
+		// log.Println(cookie)
 		return true
 	}
 
@@ -110,7 +120,7 @@ func serveWs(hub *Hub, hash string, w http.ResponseWriter, r *http.Request) {
 	}
 
 	send := make(chan []byte, 256)
-	client := &Client{Hub: hub, conn: conn, Send: send, hash: hash}
+	client := &Client{Hub: hub, conn: conn, Send: send, hash: newClient.getHash(), Store: newClient.Store}
 	client.Hub.register <- client
 
 	go client.readPump()

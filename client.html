@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <title>Client nyusocket</title>
+  </head>
+  <body>
+    <div id="state">state:</div>
+    <div id="message"></div>
+
+    <form id="sendMessage">
+      <input type="text" placeholder="Place your message" />
+      <input type="submit" value="Send!" />
+    </form>
+
+    <script>
+      var states = {
+        [WebSocket.CONNECTING]: 'CONNECTING',
+        [WebSocket.OPEN]: 'OPEN',
+        [WebSocket.CLOSING]: 'CLOSING',
+        [WebSocket.CLOSED]: 'CLOSED',
+      };
+      var _messages = [];
+
+      var client = new WebSocket('ws://localhost:3000/?token=test');
+      client.onopen = function (event) {
+        console.log(event);
+        document.getElementById('state').innerHTML =
+          'state: ' + states[client.readyState];
+      };
+      client.onmessage = function (msg) {
+        console.log('New message: ', msg);
+
+        var messages = msg.data.split('\n');
+
+        for (let i = 0; i < messages.length; i++) {
+          var message = messages[i];
+          try {
+            message = JSON.parse(message).Message;
+          } catch (err) {
+            console.log(err);
+          }
+          _messages.push(message);
+          document.getElementById('message').innerHTML = _messages
+            .map(function (m) {
+              return '<p>' + m + '</p>';
+            })
+            .join(' ');
+        }
+      };
+
+      client.onerror = function (event) {
+        console.log(event);
+        document.getElementById('state').innerHTML =
+          'state: ' + states[client.readyState];
+      };
+
+      client.onclose = function (event) {
+        console.log(event);
+        document.getElementById('state').innerHTML =
+          'state: ' + states[client.readyState];
+      };
+
+      document.getElementById('sendMessage').onsubmit = function (event) {
+        event.preventDefault();
+        client.send(event.target[0].value || 'default text');
+      };
+    </script>
+  </body>
+</html>

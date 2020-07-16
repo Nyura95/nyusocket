@@ -8,30 +8,43 @@ type Events struct {
 	ClientMessage chan ClientMessage
 }
 
-// Authorization ...
-type Authorization struct {
-	Hash      string
-	Authorize chan bool
-}
-
-// ClientMessage ...
-type ClientMessage struct {
-	Message string
-	Client  *Client
-}
-
-// Unregister ...
-type Unregister struct {
-	Client   *Client
-	Continue chan interface{}
-}
-
 // NewEvents ...
 func NewEvents() *Events {
-	return &Events{
-		Authorization: make(chan Authorization),
-		Register:      make(chan *Client),
-		Unregister:    make(chan Unregister),
-		ClientMessage: make(chan ClientMessage),
+	return &Events{}
+}
+
+// CreateAuthorizationEvent ...
+func (e *Events) CreateAuthorizationEvent() {
+	e.Authorization = make(chan Authorization)
+}
+
+// CreateRegisterEvent ...
+func (e *Events) CreateRegisterEvent() {
+	e.Register = make(chan *Client)
+}
+
+// CreateUnregisterEvent ...
+func (e *Events) CreateUnregisterEvent() {
+	e.Unregister = make(chan Unregister)
+}
+
+// CreateClientMessageEvent ...
+func (e *Events) CreateClientMessageEvent() {
+	e.ClientMessage = make(chan ClientMessage)
+}
+
+// Close all chan event
+func (e *Events) Close() {
+	if e.Authorization != nil {
+		close(e.Authorization)
+	}
+	if e.Register != nil {
+		close(e.Register)
+	}
+	if e.Unregister != nil {
+		close(e.Unregister)
+	}
+	if e.ClientMessage != nil {
+		close(e.ClientMessage)
 	}
 }

@@ -47,7 +47,7 @@ func (h *Hub) run(events *Events) {
 				events.Register <- client
 			}
 			h.clients[client] = true
-			Infos.Add(client.hash)
+			Infos.add(client.hash)
 		case c := <-h.unregister:
 			if _, ok := h.clients[c]; ok {
 				if events.Unregister != nil {
@@ -61,7 +61,7 @@ func (h *Hub) run(events *Events) {
 				}
 				delete(h.clients, c)
 				close(c.Send)
-				Infos.Del(c.hash)
+				Infos.del(c.hash)
 			}
 		case clientMessage := <-h.message:
 			events.ClientMessage <- clientMessage

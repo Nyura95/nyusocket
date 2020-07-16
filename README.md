@@ -4,7 +4,11 @@
 go get github.com/Nyura95/nyusocket
 ```
 
-Basic usage
+## Basic usage
+
+### Sending Message
+
+Server
 
 ```go
 package main
@@ -14,27 +18,14 @@ import "os"
 import "github.com/Nyura95/nyusocket"
 
 func main() {
-  Events := socket.NewEvents()
-	go socket.Start(Events, socket.Options{Port: port})
+  events := socket.NewEvents()
+	defer events.Close()
 
+	events.CreateClientMessageEvent()
+	go socket.Start(events, socket.Options{Port: 3000})
 	for {
 		select {
-		case auth := <-Events.Authorization:
-			// only one hash
-			auth.Authorize <- !socket.Infos.Alive(auth.Hash)
-		case client := <-Events.Register:
-			client.Send <- socket.NewMessage("register", "Hello", "new_register").Send()
-			for _, other := range client.Hub.GetOtherClient(client) {
-				other.Send <- socket.NewMessage("register", "New client", "new_register").Send()
-			}
-			log.Printf("New client register alive now : %d", socket.Infos.NbAlive())
-		case unregister := <-Events.Unregister:
-			for _, client := range unregister.Client.Hub.GetOtherClient(unregister.Client) {
-				client.Send <- socket.NewMessage("unregister", "New unregister", "new_unregister").Send()
-			}
-      log.Printf("Client unregister alive now : %d", socket.Infos.NbAlive())
-			unregister.Continue <- true // Mandatory !
-		case clientMessage := <-Events.ClientMessage:
+		case clientMessage := <-events.ClientMessage:
 			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
 				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
 			}
@@ -43,64 +34,105 @@ func main() {
 }
 ```
 
-Exemple client
+### Event before a login user
 
-```tsx
-import React, {
-  FunctionComponent,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-import useWebSocket from "react-use-websocket";
+```go
+package main
 
-interface IMessage {
-  Action: string;
-  Message: string;
-  Key: string;
-  Created: string;
+import "fmt"
+import "os"
+import "github.com/Nyura95/nyusocket"
+
+type storeClient struct {
+	token string
 }
 
-const page: FunctionComponent = () => {
-  const [messages, setMessages] = useState<string[]>([]);
-  const { readyState, lastMessage, sendMessage } = useWebSocket(
-    "ws://localhost:3001"
-  );
+func main() {
+  events := socket.NewEvents()
+	defer events.Close()
 
-  // const { readyState, lastMessage, sendMessage } = useWebSocket(
-  //   "ws://localhost:3001/anyTokenAuthorization"
-  // );
+	events.CreateClientMessageEvent()
+	events.CreateAuthorizationEvent()
+	go socket.Start(events, socket.Options{Port: 3000})
+	for {
+		select {
+		case authorization := <-events.Authorization:
+			// authorize only one 'token' (check the client for pass the query)
+			authorization.Client.Store = storeClient{
+				token: authorization.Client.Query["token"][0],
+			}
+			authorization.Client.Hash = authorization.Client.Query["token"][0]
+			authorization.Authorize <- !socket.Infos.Alive(authorization.Client)
+		case clientMessage := <-events.ClientMessage:
+			storeClient := clientMessage.Client.Store.(storeClient)
+			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+				other.Send <- socket.NewMessage("message", fmt.Sprintf("%s: %s", storeClient.token, clientMessage.Message), "message").Send()
+			}
+		}
+	}
+}
+```
 
-  const triggerMessage = useCallback(() => {
-    sendMessage("Hi !!");
-  }, []);
+### Event on the new client login
 
-  useEffect(() => {
-    if (lastMessage) {
-      try {
-        for (const message of lastMessage.data.split("\n")) {
-          const json: IMessage = JSON.parse(message);
-          if (
-            messages.length < 1 ||
-            json.Created !== messages[messages.length - 1].Created
-          ) {
-            setMessages([...messages, json]);
-          }
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    }
-  }, [lastMessage, messages, setMessages]);
+```go
+package main
 
-  return (
-    <Fragment>
-      <div>state: {readyState}</div>
-      {messages.map((x, index) => (
-        <div key={index}>{x.Message}</div>
-      ))}
-      <button onClick={triggerMessage}>Send Hi!</button>
-    </Fragment>
-  );
-};
+import "fmt"
+import "os"
+import "github.com/Nyura95/nyusocket"
+
+func main() {
+  events := socket.NewEvents()
+	defer events.Close()
+
+	events.CreateClientMessageEvent()
+	events.CreateRegisterEvent()
+	go socket.Start(events, socket.Options{Port: 3000})
+	for {
+		select {
+		case clientMessage := <-events.ClientMessage:
+			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
+			}
+		case client := <-events.Register:
+			client.Send <- socket.NewMessage("register", "Hello there!", "new_register").Send()
+			for _, other := range client.Hub.GetOtherClient(client) {
+				other.Send <- socket.NewMessage("register", "New client", "new_register").Send()
+			}
+		}
+	}
+}
+```
+
+### Event on the client logout
+
+```go
+package main
+
+import "fmt"
+import "os"
+import "github.com/Nyura95/nyusocket"
+
+func main() {
+  events := socket.NewEvents()
+	defer events.Close()
+
+	events.CreateClientMessageEvent()
+	events.CreateUnregisterEvent()
+	go socket.Start(events, socket.Options{Port: 3000})
+	for {
+		select {
+		case clientMessage := <-events.ClientMessage:
+			for _, other := range clientMessage.Client.Hub.GetOtherClient(clientMessage.Client) {
+				other.Send <- socket.NewMessage("message", clientMessage.Message, "message").Send()
+			}
+		case unregister := <-events.Unregister:
+			for _, other := range unregister.Client.Hub.GetOtherClient(unregister.Client) {
+				other.Send <- socket.NewMessage("unregister", "Client unregister", "new_unregister").Send()
+			}
+			unregister.Continue <- true
+		}
+	}
+}
 ```
