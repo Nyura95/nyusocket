@@ -40,6 +40,11 @@ func (c *Client) GetOthersClients() []*Client {
 	return c.hub.getOtherClient(c)
 }
 
+// GetHash ...
+func (c *Client) GetHash() string {
+	return c.hash
+}
+
 // GetAllClients ...
 func (c *Client) GetAllClients() []*Client {
 	return c.hub.GetClients()

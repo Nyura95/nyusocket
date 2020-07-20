@@ -8,11 +8,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var clientHub *Hub
+
 // Start the socket server
 func Start(events *Events, options Options) {
 
-	var hub = newHub()
-	go hub.run(events)
+	clientHub = newHub()
+	go clientHub.run(events)
 
 	r := mux.NewRouter()
 
@@ -31,10 +33,15 @@ func Start(events *Events, options Options) {
 				return
 			}
 		}
-		serveWs(hub, client, w, r)
+		serveWs(clientHub, client, w, r)
 	})
 
 	if err := http.ListenAndServe("127.0.0.1:"+strconv.Itoa(options.Port), r); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
+}
+
+// GetClientHub ...
+func GetClientHub() *Hub {
+	return clientHub
 }

@@ -7,6 +7,7 @@ type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	message    chan ClientMessage
+	close      chan bool
 }
 
 func newHub() *Hub {
@@ -26,6 +27,13 @@ func (h *Hub) GetClients() []*Client {
 		clients = append(clients, client)
 	}
 	return clients
+}
+
+// SendToAllClients ...
+func (h *Hub) SendToAllClients(message *Message) {
+	for client := range h.clients {
+		client.Send <- message.Send()
+	}
 }
 
 func (h *Hub) getOtherClient(c *Client) []*Client {
@@ -49,15 +57,16 @@ func (h *Hub) run(events *Events) {
 			Infos.add(client.hash)
 		case c := <-h.unregister:
 			if _, ok := h.clients[c]; ok {
-				delete(h.clients, c)
-				close(c.Send)
-				Infos.del(c.hash)
 				if events.Unregister != nil {
 					events.Unregister <- Unregister{
 						Store: c.Store,
 						Hub:   h,
+						Hash:  c.hash,
 					}
 				}
+				delete(h.clients, c)
+				close(c.Send)
+				Infos.del(c.hash)
 			}
 		case clientMessage := <-h.message:
 			events.ClientMessage <- clientMessage

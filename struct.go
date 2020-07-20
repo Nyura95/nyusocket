@@ -21,4 +21,5 @@ type ClientMessage struct {
 type Unregister struct {
 	Store interface{}
 	Hub   *Hub
+	Hash  string
 }
