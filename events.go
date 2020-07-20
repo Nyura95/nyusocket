@@ -13,6 +13,14 @@ func NewEvents() *Events {
 	return &Events{}
 }
 
+// CreateAllEvents ...
+func (e *Events) CreateAllEvents() {
+	e.CreateAuthorizationEvent()
+	e.CreateClientMessageEvent()
+	e.CreateRegisterEvent()
+	e.CreateUnregisterEvent()
+}
+
 // CreateAuthorizationEvent ...
 func (e *Events) CreateAuthorizationEvent() {
 	e.Authorization = make(chan Authorization)
