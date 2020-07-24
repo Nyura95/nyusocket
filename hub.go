@@ -7,7 +7,6 @@ type Hub struct {
 	register   chan *Client
 	unregister chan *Client
 	message    chan ClientMessage
-	close      chan bool
 }
 
 func newHub() *Hub {

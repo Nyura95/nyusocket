@@ -36,7 +36,7 @@ func Start(events *Events, options Options) {
 		serveWs(clientHub, client, w, r)
 	})
 
-	if err := http.ListenAndServe("127.0.0.1:"+strconv.Itoa(options.Port), r); err != nil {
+	if err := http.ListenAndServe(":"+strconv.Itoa(options.Port), r); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
