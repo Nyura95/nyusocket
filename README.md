@@ -7,7 +7,6 @@ go get github.com/Nyura95/nyusocket
 ## Next step of development
 
 - Change the creation of events to make it more 'user frendly'
-- Adding log server
 
 ## Basic usage
 
