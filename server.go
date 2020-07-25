@@ -3,7 +3,6 @@ package nyusocket
 import (
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -36,7 +35,8 @@ func Start(events *Events, options Options) {
 		serveWs(clientHub, client, w, r)
 	})
 
-	if err := http.ListenAndServe(":"+strconv.Itoa(options.Port), r); err != nil {
+	log.Printf("Server websocket running on %s", options.Addr)
+	if err := http.ListenAndServe(options.Addr, r); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }

@@ -2,7 +2,7 @@ package nyusocket
 
 // Options module
 type Options struct {
-	Port int
+	Addr string
 }
 
 // Authorization ...

@@ -1,6 +1,7 @@
 package nyusocket
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -28,11 +29,20 @@ var upgrader = websocket.Upgrader{
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	hub   *Hub
-	Send  chan []byte
+	send  chan []byte
 	Store interface{}
 
 	conn *websocket.Conn
 	hash string
+}
+
+// Send a message
+func (c *Client) Send(message []byte) error {
+	if !Infos.Alive(c) {
+		return errors.New("client unregisted")
+	}
+	c.send <- message
+	return nil
 }
 
 // GetOthersClients ...
@@ -86,7 +96,7 @@ func (c *Client) writePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.Send:
+		case message, ok := <-c.send:
 
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
@@ -100,10 +110,10 @@ func (c *Client) writePump() {
 			}
 			w.Write(message)
 
-			n := len(c.Send)
+			n := len(c.send)
 			for i := 0; i < n; i++ {
 				w.Write(newline)
-				w.Write(<-c.Send)
+				w.Write(<-c.send)
 			}
 
 			if err := w.Close(); err != nil {
@@ -135,7 +145,7 @@ func serveWs(hub *Hub, newClient *NewClient, w http.ResponseWriter, r *http.Requ
 	}
 
 	send := make(chan []byte, 256)
-	client := &Client{hub: hub, conn: conn, Send: send, hash: newClient.getHash(), Store: newClient.Store}
+	client := &Client{hub: hub, conn: conn, send: send, hash: newClient.getHash(), Store: newClient.Store}
 	client.hub.register <- client
 
 	go client.readPump()

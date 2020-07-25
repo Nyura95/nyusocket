@@ -3,6 +3,7 @@ package nyusocket
 // Hub of the clients
 type Hub struct {
 	clients map[*Client]bool
+	alive   bool
 
 	register   chan *Client
 	unregister chan *Client
@@ -31,7 +32,7 @@ func (h *Hub) GetClients() []*Client {
 // SendToAllClients ...
 func (h *Hub) SendToAllClients(message *Message) {
 	for client := range h.clients {
-		client.Send <- message.Send()
+		client.send <- message.Send()
 	}
 }
 
@@ -46,6 +47,7 @@ func (h *Hub) getOtherClient(c *Client) []*Client {
 }
 
 func (h *Hub) run(events *Events) {
+	h.alive = true
 	for {
 		select {
 		case client := <-h.register:
@@ -64,7 +66,7 @@ func (h *Hub) run(events *Events) {
 					}
 				}
 				delete(h.clients, c)
-				close(c.Send)
+				close(c.send)
 				Infos.del(c.hash)
 			}
 		case clientMessage := <-h.message:
