@@ -1,6 +1,7 @@
 package nyusocket
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -10,7 +11,7 @@ import (
 var clientHub *Hub
 
 // Start the socket server
-func Start(events *Events, options Options) {
+func Start(ctx context.Context, events *Events, options Options) {
 
 	clientHub = newHub()
 	go clientHub.run(events)
@@ -35,8 +36,16 @@ func Start(events *Events, options Options) {
 		serveWs(clientHub, client, w, r)
 	})
 
+	s := http.Server{Addr: options.Addr, Handler: r}
+	go func() {
+		<-ctx.Done()
+		if err := s.Shutdown(context.Background()); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	log.Printf("Server websocket running on %s", options.Addr)
-	if err := http.ListenAndServe(options.Addr, r); err != nil {
+	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal("ListenAndServe:", err)
 	}
 }

@@ -21,13 +21,14 @@ package main
 import "fmt"
 import "os"
 import "github.com/Nyura95/nyusocket"
+import "context"
 
 func main() {
   events := socket.NewEvents()
 	defer events.Close()
 
 	events.CreateClientMessageEvent()
-	go socket.Start(events, socket.Options{Port: 3000})
+	go socket.Start(context.Background(), socket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
@@ -46,6 +47,7 @@ package main
 
 import "fmt"
 import "os"
+import "context"
 import "github.com/Nyura95/nyusocket"
 
 type storeClient struct {
@@ -58,7 +60,7 @@ func main() {
 
 	events.CreateClientMessageEvent()
 	events.CreateAuthorizationEvent()
-	go socket.Start(events, socket.Options{Addr: "127.0.0.1:3000"})
+	go socket.Start(context.Background(), events, socket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case authorization := <-events.Authorization:
@@ -85,6 +87,7 @@ package main
 
 import "fmt"
 import "os"
+import "context"
 import "github.com/Nyura95/nyusocket"
 
 func main() {
@@ -93,7 +96,7 @@ func main() {
 
 	events.CreateClientMessageEvent()
 	events.CreateRegisterEvent()
-	go socket.Start(events, socket.Options{Addr: "127.0.0.1:3000"})
+	go socket.Start(context.Background(), events, socket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
@@ -117,6 +120,7 @@ package main
 
 import "fmt"
 import "os"
+import "context"
 import "github.com/Nyura95/nyusocket"
 
 func main() {
@@ -125,7 +129,7 @@ func main() {
 
 	events.CreateClientMessageEvent()
 	events.CreateUnregisterEvent()
-	go socket.Start(events, socket.Options{Addr: "127.0.0.1:3000"})
+	go socket.Start(context.Background(), events, socket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
@@ -139,5 +143,34 @@ func main() {
 			}
 		}
 	}
+}
+```
+
+### Stop server
+
+```go
+package main
+
+import "fmt"
+import "os"
+import "time"
+import "github.com/Nyura95/nyusocket"
+import "context"
+
+func main() {
+  events := socket.NewEvents()
+	defer events.Close()
+
+	events.CreateClientMessageEvent()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		cancel()
+	}()
+
+	socket.Start(ctx, socket.Options{Addr: "127.0.0.1:3000"})
+	log.Println("server closed")
 }
 ```
