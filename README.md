@@ -68,11 +68,11 @@ func main() {
 				token: authorization.Client.Query["token"][0],
 			}
 			authorization.Client.Hash = authorization.Client.Query["token"][0]
-			authorization.Authorize <- !socket.Infos.Alive(authorization.Client)
+			authorization.Authorize <- !socket.Infos.Alive(authorization.Client) // chan authorization.Authorize return an boolean, if false the client is unregister
 		case clientMessage := <-events.ClientMessage:
-			storeClient := clientMessage.Client.Store.(storeClient)
-			for _, other := range clientMessage.Client.GetOthersClients() {
-				other.Send(socket.NewMessage("message", fmt.Sprintf("%s: %s", storeClient.token, clientMessage.Message), "message").Send())
+			storeClient := clientMessage.Client.Store.(storeClient) // get store client
+			for _, other := range clientMessage.Client.GetOthersClients() { // get all other clients actually registered
+				other.Send(socket.NewMessage("message", fmt.Sprintf("%s: %s", storeClient.token, clientMessage.Message), "message").Send()) // send customer's message to others
 			}
 		}
 	}
@@ -102,10 +102,10 @@ func main() {
 			for _, other := range clientMessage.Client.GetOthersClients() {
 				other.Send(socket.NewMessage("message", clientMessage.Message, "message").Send())
 			}
-		case client := <-events.Register:
-			client.Send(socket.NewMessage("register", "Hello there!", "new_register").Send())
+		case client := <-events.Register: // new client registered
+			client.Send(socket.NewMessage("register", "Hello there!", "new_register").Send()) // send a message to the client
 			for _, other := range client.GetOthersClients() {
-				other.Send(socket.NewMessage("register", "New client", "new_register").Send())
+				other.Send(socket.NewMessage("register", "New client", "new_register").Send()) // tell others that a new customer is registered
 			}
 		}
 	}
@@ -136,9 +136,9 @@ func main() {
 				other.Send(socket.NewMessage("message", clientMessage.Message, "message").Send())
 			}
     case unregister := <-events.Unregister:
-      // unregister.Store
+      // unregister.Store (you can access to the store client if needed)
 			for _, other := range unregister.Hub.GetClients() {
-				other.Send(socket.NewMessage("unregister", "Client unregister", "new_unregister").Send())
+				other.Send(socket.NewMessage("unregister", "Client unregister", "new_unregister").Send()) // tell others that a new customer is logout
 			}
 		}
 	}
