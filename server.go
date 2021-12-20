@@ -16,6 +16,12 @@ func Start(ctx context.Context, events *Events, options Options) {
 	clientHub = newHub()
 	go clientHub.run(events)
 
+	defer func() {
+		for _, client := range clientHub.GetClients() {
+			clientHub.unregister <- client
+		}
+	}()
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
