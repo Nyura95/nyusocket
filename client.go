@@ -25,12 +25,10 @@ type Client struct {
 	hub   *Hub
 	send  chan []byte
 	Store *Store
-
 	query map[string][]string
 	path  string
-
-	conn *websocket.Conn
-	hash string
+	conn  *websocket.Conn
+	hash  string
 }
 
 // GetPath return the path client
