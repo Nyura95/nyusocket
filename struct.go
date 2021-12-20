@@ -1,14 +1,16 @@
 package nyusocket
 
+import "github.com/segmentio/ksuid"
+
 // Options module
 type Options struct {
 	Addr string
 }
 
-// Authorization ...
-type Authorization struct {
+// BeforeUpgrade ...
+type BeforeUpgrade struct {
 	Authorize chan bool
-	Client    *NewClient
+	Client    *Client
 }
 
 // ClientMessage ...
@@ -19,7 +21,22 @@ type ClientMessage struct {
 
 // Unregister ...
 type Unregister struct {
-	Store interface{}
+	Store *Store
 	Hub   *Hub
 	Hash  string
+}
+
+// NewClient ...
+type NewClient struct {
+	Query map[string][]string
+	Path  string
+	Store *Store
+	Hash  string
+}
+
+func (n *NewClient) getHash() string {
+	if n.Hash == "" {
+		n.Hash = ksuid.New().String()
+	}
+	return n.Hash
 }

@@ -3,7 +3,6 @@ package nyusocket
 import (
 	"errors"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -21,19 +20,35 @@ var (
 	space   = []byte{' '}
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	hub   *Hub
 	send  chan []byte
-	Store interface{}
+	Store *Store
+
+	query map[string][]string
+	path  string
 
 	conn *websocket.Conn
 	hash string
+}
+
+// GetPath return the path client
+func (c *Client) GetPath() string {
+	return c.path
+}
+
+// GetQuery return query client
+func (c *Client) GetQuery(key string) ([]string, error) {
+	if val, exist := c.query[key]; exist {
+		return val, nil
+	}
+	return nil, errors.New("key not exist")
+}
+
+// Close disconnect the client
+func (c *Client) Close() {
+	c.hub.unregister <- c
 }
 
 // Send a message
@@ -97,7 +112,6 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -108,12 +122,21 @@ func (c *Client) writePump() {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			_, err = w.Write(message)
+			if err != nil {
+				return
+			}
 
 			n := len(c.send)
 			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
+				_, err = w.Write(newline)
+				if err != nil {
+					return
+				}
+				_, err = w.Write(<-c.send)
+				if err != nil {
+					return
+				}
 			}
 
 			if err := w.Close(); err != nil {
@@ -122,58 +145,9 @@ func (c *Client) writePump() {
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Println(err)
 				return
 			}
 		}
 	}
-}
-
-func serveWs(hub *Hub, newClient *NewClient, w http.ResponseWriter, r *http.Request) {
-	upgrader.CheckOrigin = func(r *http.Request) bool {
-		// cookie, err := r.Cookie("X-Auth-Token")
-		// if err != nil {
-		// 	log.Panicln(err)
-		// }
-		// log.Println(cookie)
-		return true
-	}
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	send := make(chan []byte, 256)
-	client := &Client{hub: hub, conn: conn, send: send, hash: newClient.getHash(), Store: newClient.Store}
-	client.hub.register <- client
-
-	go client.readPump()
-	go client.writePump()
-}
-
-func closeServeWs(msg string, key string, w http.ResponseWriter, r *http.Request) {
-	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
-	}
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	conn.SetWriteDeadline(time.Now().Add(writeWait))
-
-	t, err := conn.NextWriter(websocket.TextMessage)
-	if err != nil {
-		return
-	}
-	t.Write(NewMessage("Error", key, msg).Send())
-	if err := t.Close(); err != nil {
-		return
-	}
-
-	log.Printf("Disconnected user during login (%s)", string(msg))
-	conn.Close()
 }

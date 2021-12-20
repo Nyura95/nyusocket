@@ -1,8 +1,10 @@
 package nyusocket
 
+import "log"
+
 // Events ...
 type Events struct {
-	Authorization chan Authorization
+	BeforeUpgrade chan BeforeUpgrade
 	Register      chan *Client
 	Unregister    chan Unregister
 	ClientMessage chan ClientMessage
@@ -15,15 +17,15 @@ func NewEvents() *Events {
 
 // CreateAllEvents ...
 func (e *Events) CreateAllEvents() {
-	e.CreateAuthorizationEvent()
+	e.CreateBeforeUpgradeEvent()
 	e.CreateClientMessageEvent()
 	e.CreateRegisterEvent()
 	e.CreateUnregisterEvent()
 }
 
-// CreateAuthorizationEvent ...
-func (e *Events) CreateAuthorizationEvent() {
-	e.Authorization = make(chan Authorization)
+// CreateBeforeUpgradeEvent ...
+func (e *Events) CreateBeforeUpgradeEvent() {
+	e.BeforeUpgrade = make(chan BeforeUpgrade)
 }
 
 // CreateRegisterEvent ...
@@ -43,8 +45,9 @@ func (e *Events) CreateClientMessageEvent() {
 
 // Close all chan event
 func (e *Events) Close() {
-	if e.Authorization != nil {
-		close(e.Authorization)
+	log.Println(e.BeforeUpgrade)
+	if e.BeforeUpgrade != nil {
+		close(e.BeforeUpgrade)
 	}
 	if e.Register != nil {
 		close(e.Register)

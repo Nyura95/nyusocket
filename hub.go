@@ -70,7 +70,9 @@ func (h *Hub) run(events *Events) {
 				Infos.del(c.hash)
 			}
 		case clientMessage := <-h.message:
-			events.ClientMessage <- clientMessage
+			if events.ClientMessage != nil {
+				events.ClientMessage <- clientMessage
+			}
 		}
 	}
 }
