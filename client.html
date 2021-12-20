@@ -4,12 +4,15 @@
   </head>
   <body>
     <div id="state">state:</div>
-    <div id="message"></div>
 
     <form id="sendMessage">
       <input type="text" placeholder="Place your message" />
       <input type="submit" value="Send!" />
     </form>
+
+    <textarea id="messages" rows="5" cols="53">
+
+    </textarea>
 
     <script>
       var states = {
@@ -20,7 +23,7 @@
       };
       var _messages = [];
 
-      var client = new WebSocket('ws://localhost:3000/?token=test');
+      var client = new WebSocket('ws://localhost:3001');
       client.onopen = function (event) {
         console.log(event);
         document.getElementById('state').innerHTML =
@@ -28,22 +31,20 @@
       };
       client.onmessage = function (msg) {
         console.log('New message: ', msg);
-
         var messages = msg.data.split('\n');
-
         for (let i = 0; i < messages.length; i++) {
           var message = messages[i];
           try {
-            message = JSON.parse(message).Message;
+            message = JSON.parse(message);
           } catch (err) {
             console.log(err);
           }
           _messages.push(message);
-          document.getElementById('message').innerHTML = _messages
-            .map(function (m) {
-              return '<p>' + m + '</p>';
-            })
-            .join(' ');
+          var tchat = document.getElementById('messages');
+          tchat.value = _messages.map(function(x) {
+            return "Action: " + x.Action + " | " + x.Message
+          }).join('\r\n');
+          tchat.scrollTo({ top: tchat.scrollHeight })
         }
       };
 

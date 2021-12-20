@@ -32,7 +32,7 @@ func main() {
 		select {
 		case clientMessage := <-events.ClientMessage:
 			for _, other := range clientMessage.Client.GetOthersClients() {
-				other.Send(socket.NewMessage("message", clientMessage.Message, "message").Send())
+				other.Send(nyusocket.NewMessage("message", clientMessage.Message, "message").Send())
 			}
 		}
 	}
@@ -54,12 +54,12 @@ type storeClient struct {
 }
 
 func main() {
-  events := socket.NewEvents()
+  events := nyusocket.NewEvents()
 	defer events.Close()
 
 	events.CreateClientMessageEvent()
 	events.CreateAuthorizationEvent()
-	go socket.Start(context.Background(), events, socket.Options{Addr: "127.0.0.1:3000"})
+	go nyusocket.Start(context.Background(), events, nyusocket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case authorization := <-events.Authorization:
@@ -68,11 +68,11 @@ func main() {
 				token: authorization.Client.Query["token"][0],
 			}
 			authorization.Client.Hash = authorization.Client.Query["token"][0]
-			authorization.Authorize <- !socket.Infos.Alive(authorization.Client) // chan authorization.Authorize return an boolean, if false the client is unregister
+			authorization.Authorize <- !nyusocket.Infos.Alive(authorization.Client) // chan authorization.Authorize return an boolean, if false the client is unregister
 		case clientMessage := <-events.ClientMessage:
 			storeClient := clientMessage.Client.Store.(storeClient) // get store client
 			for _, other := range clientMessage.Client.GetOthersClients() { // get all other clients actually registered
-				other.Send(socket.NewMessage("message", fmt.Sprintf("%s: %s", storeClient.token, clientMessage.Message), "message").Send()) // send customer's message to others
+				other.Send(nyusocket.NewMessage("message", fmt.Sprintf("%s: %s", storeClient.token, clientMessage.Message), "message").Send()) // send customer's message to others
 			}
 		}
 	}
@@ -90,22 +90,22 @@ import "context"
 import "github.com/Nyura95/nyusocket"
 
 func main() {
-  events := socket.NewEvents()
+  events := nyusocket.NewEvents()
 	defer events.Close()
 
 	events.CreateClientMessageEvent()
 	events.CreateRegisterEvent()
-	go socket.Start(context.Background(), events, socket.Options{Addr: "127.0.0.1:3000"})
+	go nyusocket.Start(context.Background(), events, nyusocket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
 			for _, other := range clientMessage.Client.GetOthersClients() {
-				other.Send(socket.NewMessage("message", clientMessage.Message, "message").Send())
+				other.Send(nyusocket.NewMessage("message", clientMessage.Message, "message").Send())
 			}
 		case client := <-events.Register: // new client registered
-			client.Send(socket.NewMessage("register", "Hello there!", "new_register").Send()) // send a message to the client
+			client.Send(nyusocket.NewMessage("register", "Hello there!", "new_register").Send()) // send a message to the client
 			for _, other := range client.GetOthersClients() {
-				other.Send(socket.NewMessage("register", "New client", "new_register").Send()) // tell others that a new customer is registered
+				other.Send(nyusocket.NewMessage("register", "New client", "new_register").Send()) // tell others that a new customer is registered
 			}
 		}
 	}
@@ -123,22 +123,22 @@ import "context"
 import "github.com/Nyura95/nyusocket"
 
 func main() {
-  events := socket.NewEvents()
+  events := nyusocket.NewEvents()
 	defer events.Close()
 
 	events.CreateClientMessageEvent()
 	events.CreateUnregisterEvent()
-	go socket.Start(context.Background(), events, socket.Options{Addr: "127.0.0.1:3000"})
+	go nyusocket.Start(context.Background(), events, nyusocket.Options{Addr: "127.0.0.1:3000"})
 	for {
 		select {
 		case clientMessage := <-events.ClientMessage:
 			for _, other := range clientMessage.Client.GetOthersClients() {
-				other.Send(socket.NewMessage("message", clientMessage.Message, "message").Send())
+				other.Send(nyusocket.NewMessage("message", clientMessage.Message, "message").Send())
 			}
     case unregister := <-events.Unregister:
       // unregister.Store (you can access to the store client if needed)
 			for _, other := range unregister.Hub.GetClients() {
-				other.Send(socket.NewMessage("unregister", "Client unregister", "new_unregister").Send()) // tell others that a new customer is logout
+				other.Send(nyusocket.NewMessage("unregister", "Client unregister", "new_unregister").Send()) // tell others that a new customer is logout
 			}
 		}
 	}
@@ -157,7 +157,7 @@ import "github.com/Nyura95/nyusocket"
 import "context"
 
 func main() {
-  events := socket.NewEvents()
+  events := nyusocket.NewEvents()
 	defer events.Close()
 
 	events.CreateClientMessageEvent()
@@ -169,7 +169,54 @@ func main() {
 		cancel()
 	}()
 
-	socket.Start(ctx, socket.Options{Addr: "127.0.0.1:3000"})
+	nyusocket.Start(ctx, nyusocket.Options{Addr: "127.0.0.1:3000"})
 	log.Println("server closed")
 }
+```
+
+## Client side
+
+### Message server example
+
+```javascript
+{ Action: string, Message: string, Key: string, Created: Date }
+```
+
+### Who to use ? (see client.html)
+
+```javascript
+var states = {
+  [WebSocket.CONNECTING]: "CONNECTING",
+  [WebSocket.OPEN]: "OPEN",
+  [WebSocket.CLOSING]: "CLOSING",
+  [WebSocket.CLOSED]: "CLOSED",
+};
+var _messages = [];
+
+var client = new WebSocket("ws://...");
+client.onopen = function (event) {
+  console.log(event);
+  document.getElementById("state").innerHTML =
+    "state: " + states[client.readyState];
+};
+client.onmessage = function (msg) {
+  console.log("New message: ", msg);
+  var messages = msg.data.split("\n");
+  for (let i = 0; i < messages.length; i++) {
+    var message = messages[i];
+    try {
+      message = JSON.parse(message);
+    } catch (err) {
+      console.log(err);
+    }
+    _messages.push(message);
+    var tchat = document.getElementById("messages");
+    tchat.value = _messages
+      .map(function (x) {
+        return "Action: " + x.Action + " | " + x.Message;
+      })
+      .join("\r\n");
+    tchat.scrollTo({ top: tchat.scrollHeight });
+  }
+};
 ```
