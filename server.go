@@ -53,7 +53,7 @@ func index(clientHub *Hub, events *Events) func(w http.ResponseWriter, r *http.R
 	return func(w http.ResponseWriter, r *http.Request) {
 		client := &Client{hub: clientHub, hash: ksuid.New().String(), Store: NewStore(), path: r.URL.Path, query: r.URL.Query()}
 
-		var isAuthorizate bool
+		isAuthorizate := true
 		if events.BeforeUpgrade != nil {
 			authorize := make(chan bool)
 			events.BeforeUpgrade <- BeforeUpgrade{
