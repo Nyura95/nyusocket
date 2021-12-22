@@ -4,6 +4,7 @@ package nyusocket
 type Hub struct {
 	clients map[*Client]bool
 	alive   bool
+	info    Info
 
 	register   chan *Client
 	unregister chan *Client
@@ -18,6 +19,10 @@ func newHub() *Hub {
 		unregister: make(chan *Client),
 		message:    make(chan ClientMessage),
 	}
+}
+
+func (h Hub) GetInfo() Info {
+	return h.info
 }
 
 // GetClients return all clients connected
@@ -55,7 +60,7 @@ func (h *Hub) run(events *Events) {
 				events.Register <- client
 			}
 			h.clients[client] = true
-			Infos.add(client.hash)
+			h.info.add(client.hash)
 		case c := <-h.unregister:
 			if _, ok := h.clients[c]; ok {
 				if events.Unregister != nil {
@@ -67,7 +72,7 @@ func (h *Hub) run(events *Events) {
 				}
 				delete(h.clients, c)
 				close(c.send)
-				Infos.del(c.hash)
+				h.info.del(c.hash)
 			}
 		case clientMessage := <-h.message:
 			if events.ClientMessage != nil {

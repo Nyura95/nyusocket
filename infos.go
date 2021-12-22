@@ -1,17 +1,14 @@
 package nyusocket
 
-// Infos public
-var Infos = info{}
-
-type info struct {
+type Info struct {
 	List []string
 }
 
-func (i *info) add(hash string) {
+func (i *Info) add(hash string) {
 	i.List = append(i.List, hash)
 }
 
-func (i *info) del(hash string) {
+func (i *Info) del(hash string) {
 	for index, tokenList := range i.List {
 		if tokenList == hash {
 			i.List = append(i.List[:index], i.List[index+1:]...)
@@ -20,7 +17,7 @@ func (i *info) del(hash string) {
 	}
 }
 
-func (i *info) Alive(client client) bool {
+func (i *Info) Alive(client client) bool {
 	for _, tokenList := range i.List {
 		if tokenList == client.getHash() {
 			return true
@@ -29,6 +26,6 @@ func (i *info) Alive(client client) bool {
 	return false
 }
 
-func (i *info) NbAlive() int {
+func (i *Info) NbAlive() int {
 	return len(i.List)
 }

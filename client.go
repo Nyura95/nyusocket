@@ -51,7 +51,7 @@ func (c *Client) Close() {
 
 // Send a message
 func (c *Client) Send(message []byte) error {
-	if !Infos.Alive(c) {
+	if !c.hub.info.Alive(c) {
 		return errors.New("client unregisted")
 	}
 	c.send <- message
