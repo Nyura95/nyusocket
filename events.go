@@ -1,7 +1,5 @@
 package nyusocket
 
-import "log"
-
 // Events ...
 type Events struct {
 	BeforeUpgrade chan BeforeUpgrade
@@ -45,17 +43,20 @@ func (e *Events) CreateClientMessageEvent() {
 
 // Close all chan event
 func (e *Events) Close() {
-	log.Println(e.BeforeUpgrade)
 	if e.BeforeUpgrade != nil {
 		close(e.BeforeUpgrade)
+		e.BeforeUpgrade = nil
 	}
 	if e.Register != nil {
 		close(e.Register)
+		e.Register = nil
 	}
 	if e.Unregister != nil {
 		close(e.Unregister)
+		e.Unregister = nil
 	}
 	if e.ClientMessage != nil {
 		close(e.ClientMessage)
+		e.ClientMessage = nil
 	}
 }
