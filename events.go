@@ -49,14 +49,18 @@ func (e *Events) CreateClientMessageEvent() chan ClientMessage {
 func (e *Events) Close() {
 	if e.BeforeUpgrade != nil {
 		close(e.BeforeUpgrade)
+		e.BeforeUpgrade = nil
 	}
 	if e.Register != nil {
 		close(e.Register)
+		e.Register = nil
 	}
 	if e.Unregister != nil {
 		close(e.Unregister)
+		e.Unregister = nil
 	}
 	if e.ClientMessage != nil {
 		close(e.ClientMessage)
+		e.ClientMessage = nil
 	}
 }
