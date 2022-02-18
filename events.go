@@ -1,7 +1,5 @@
 package nyusocket
 
-import "log"
-
 // Events ...
 type Events struct {
 	BeforeUpgrade chan BeforeUpgrade
@@ -24,28 +22,31 @@ func (e *Events) CreateAllEvents() {
 }
 
 // CreateBeforeUpgradeEvent ...
-func (e *Events) CreateBeforeUpgradeEvent() {
+func (e *Events) CreateBeforeUpgradeEvent() <-chan BeforeUpgrade {
 	e.BeforeUpgrade = make(chan BeforeUpgrade)
+	return e.BeforeUpgrade
 }
 
 // CreateRegisterEvent ...
-func (e *Events) CreateRegisterEvent() {
+func (e *Events) CreateRegisterEvent() <-chan *Client {
 	e.Register = make(chan *Client)
+	return e.Register
 }
 
 // CreateUnregisterEvent ...
-func (e *Events) CreateUnregisterEvent() {
+func (e *Events) CreateUnregisterEvent() <-chan Unregister {
 	e.Unregister = make(chan Unregister)
+	return e.Unregister
 }
 
 // CreateClientMessageEvent ...
-func (e *Events) CreateClientMessageEvent() {
+func (e *Events) CreateClientMessageEvent() chan ClientMessage {
 	e.ClientMessage = make(chan ClientMessage)
+	return e.ClientMessage
 }
 
 // Close all chan event
 func (e *Events) Close() {
-	log.Println(e.BeforeUpgrade)
 	if e.BeforeUpgrade != nil {
 		close(e.BeforeUpgrade)
 	}

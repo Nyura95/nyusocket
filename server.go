@@ -14,39 +14,52 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 	Subprotocols: []string{"soap"},
 }
 
-// Start the socket server
-func Start(ctx context.Context, events *Events, options Options) error {
+type Server struct {
+	events  *Events
+	http    http.Server
+	options Options
+}
 
-	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
-	}
+func NewServer(options Options) Server {
+	s := Server{events: NewEvents(), options: options}
 
 	clientHub := newHub()
-	go clientHub.run(events)
+	go clientHub.run(s.events)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", index(clientHub, events))
+	r.HandleFunc("/", index(clientHub, s.events))
 
-	var sErr error
-	s := http.Server{Addr: options.Addr, Handler: r}
+	s.http = http.Server{Addr: options.Addr, Handler: r}
+
+	return s
+}
+
+func (s Server) Start(ctx context.Context) {
+
 	go func() {
 		<-ctx.Done()
-		events.Close()
-		if err := s.Shutdown(context.Background()); err != nil {
-			sErr = err
+		if err := s.http.Shutdown(context.Background()); err != nil {
+			log.Println(err)
 		}
+		s.events.Close()
 	}()
 
-	log.Printf("Server websocket running on %s", options.Addr)
-	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return err
+	log.Printf("Server websocket running on %s", s.options.Addr)
+	if err := s.http.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Panicln(err)
 	}
 	log.Println("Server websocket closed")
-	return sErr
+
+}
+
+func (s Server) GetEvents() *Events {
+	return s.events
 }
 
 func index(clientHub *Hub, events *Events) func(w http.ResponseWriter, r *http.Request) {
