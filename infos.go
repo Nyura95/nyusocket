@@ -17,15 +17,15 @@ func (i *Info) del(hash string) {
 	}
 }
 
-func (i *Info) Alive(client client) bool {
+func (i Info) Alive(client *Client) bool {
 	for _, tokenList := range i.List {
-		if tokenList == client.getHash() {
+		if tokenList == client.GetHash() {
 			return true
 		}
 	}
 	return false
 }
 
-func (i *Info) NbAlive() int {
+func (i Info) NbAlive() int {
 	return len(i.List)
 }

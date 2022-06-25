@@ -1,6 +1,8 @@
 package nyusocket
 
-import "github.com/segmentio/ksuid"
+import (
+	"github.com/segmentio/ksuid"
+)
 
 // Options module
 type Options struct {
@@ -13,15 +15,9 @@ type BeforeUpgrade struct {
 	Client    *Client
 }
 
-// ClientMessage ...
-type ClientMessage struct {
-	Message string
-	Client  *Client
-}
-
 // Unregister ...
 type Unregister struct {
-	Store *Store
+	Store Store
 	Hub   *Hub
 	Hash  string
 }
@@ -30,7 +26,7 @@ type Unregister struct {
 type NewClient struct {
 	Query map[string][]string
 	Path  string
-	Store *Store
+	Store Store
 	Hash  string
 }
 

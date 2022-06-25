@@ -35,10 +35,11 @@ func (h *Hub) GetClients() []*Client {
 }
 
 // SendToAllClients ...
-func (h *Hub) SendToAllClients(message *Message) {
+func (h *Hub) SendToAllClients(message Message) error {
 	for client := range h.clients {
 		client.send <- message.Send()
 	}
+	return nil
 }
 
 func (h *Hub) getOtherClient(c *Client) []*Client {

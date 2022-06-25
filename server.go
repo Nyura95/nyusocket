@@ -2,8 +2,10 @@ package nyusocket
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,6 +28,10 @@ type Server struct {
 	options Options
 }
 
+type page struct {
+	Title string
+}
+
 func NewServer(options Options) Server {
 	s := Server{events: NewEvents(), options: options}
 
@@ -33,7 +39,13 @@ func NewServer(options Options) Server {
 	go clientHub.run(s.events)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", index(clientHub, s.events))
+	r.HandleFunc("/msg", index(clientHub, s.events))
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		var templates *template.Template
+		templates = template.Must(templates.ParseGlob("./template/*.html"))
+		templates.ExecuteTemplate(w, "heart.html", page{Title: os.Getenv("TITLE")})
+	}).Methods(http.MethodGet)
 
 	s.http = http.Server{Addr: options.Addr, Handler: r}
 
@@ -86,7 +98,6 @@ func index(clientHub *Hub, events *Events) func(w http.ResponseWriter, r *http.R
 
 		if !isAuthorizate {
 			conn.SetWriteDeadline(time.Now().Add(writeWait))
-
 			t, err := conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return

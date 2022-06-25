@@ -24,7 +24,7 @@ var (
 type Client struct {
 	hub   *Hub
 	send  chan []byte
-	Store *Store
+	Store Store
 	query map[string][]string
 	path  string
 	conn  *websocket.Conn
@@ -64,17 +64,13 @@ func (c *Client) GetOthersClients() []*Client {
 }
 
 // GetHash ...
-func (c *Client) GetHash() string {
+func (c Client) GetHash() string {
 	return c.hash
 }
 
 // GetAllClients ...
-func (c *Client) GetAllClients() []*Client {
+func (c Client) GetAllClients() []*Client {
 	return c.hub.GetClients()
-}
-
-func (c *Client) getHash() string {
-	return c.hash
 }
 
 func (c *Client) readPump() {

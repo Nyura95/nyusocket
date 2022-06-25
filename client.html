@@ -6,7 +6,7 @@
     <div id="state">state:</div>
 
     <form id="sendMessage">
-      <input type="text" placeholder="Place your message" />
+      <input type="text" placeholder="Place your message" id="msg" />
       <input type="submit" value="Send!" />
     </form>
 
@@ -23,7 +23,7 @@
       };
       var _messages = [];
 
-      var client = new WebSocket('ws://localhost:3001');
+      var client = new WebSocket('ws://localhost:3001/msg?name=Cedric2&uuid=90da8ef4583439cb5188e80e4c9ff335');
       client.onopen = function (event) {
         console.log(event);
         document.getElementById('state').innerHTML =
@@ -42,7 +42,7 @@
           _messages.push(message);
           var tchat = document.getElementById('messages');
           tchat.value = _messages.map(function(x) {
-            return "Action: " + x.Action + " | " + x.Message
+            return "Action: " + x.Action + " | Key: "+ x.Key + " | Message: " + x.Message
           }).join('\r\n');
           tchat.scrollTo({ top: tchat.scrollHeight })
         }
@@ -63,6 +63,7 @@
       document.getElementById('sendMessage').onsubmit = function (event) {
         event.preventDefault();
         client.send(event.target[0].value || 'default text');
+        event.target[0].value = ''
       };
     </script>
   </body>
